@@ -33,6 +33,7 @@ export async function insertDraft(draft) {
 
   const fields = {
     'Company': draft.company || '',
+    'Team Member': config.AIRTABLE_TEAM_MEMBER,
     'Done Yesterday': draft.done || '',
     'In Progress Today': draft.inProgress || '',
     'Blocked': draft.blocked || 'N/A',

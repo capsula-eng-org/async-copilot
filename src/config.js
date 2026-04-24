@@ -11,6 +11,7 @@ const schema = z.object({
   AIRTABLE_PROJECTS_TABLE: z.string().default('Projects'),
   AIRTABLE_PROJECTS_NAME_FIELD: z.string().default('Name'),
   AIRTABLE_DRAFTS_URL: z.string().url().optional(),
+  AIRTABLE_TEAM_MEMBER: z.string().default('David'),
   MAKE_WEBHOOK_URL: z.string().url(),
   WEBHOOK_SECRET: z.string().min(16),
   PORT: z.coerce.number().int().default(3000),
