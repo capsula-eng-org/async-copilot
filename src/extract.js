@@ -19,14 +19,14 @@ const SYSTEM = `You extract a daily standup entry from a voice-note transcript.
 Respond with ONLY a JSON object (no prose, no markdown), matching this exact shape:
 {
   "company": "TradeSpace" | "Enginectra",
-  "project": "<project name as the user spoke it>",
+  "project": "<project name as the user spoke it, or empty string if no project mentioned>",
   "done": "<completed tasks, or empty string>",
   "inProgress": "<tasks today, or empty string>",
   "blocked": "<blockers, or 'N/A'>"
 }
 Rules:
 - "company" MUST be exactly "TradeSpace" or "Enginectra". If ambiguous, default to "TradeSpace".
-- "project": echo the project name as spoken; do NOT translate or invent.
+- "project": echo the project name as spoken; do NOT translate or invent. If the user does not mention a specific project, use an empty string — do NOT guess.
 - Strip filler words ("um", "like", "you know"). Do not invent facts.
 - Empty strings are allowed for missing fields. "blocked" defaults to "N/A".`;
 

@@ -28,7 +28,7 @@ export async function sendReview() {
     const f = d.fields;
     const project = Array.isArray(f['Project Linked']) && f['Project Linked'].length
       ? `linked (${f['Project Linked'].length})`
-      : '⚠️ unlinked';
+      : '(none)';
     return `*${i + 1}. ${f['Company'] || '?'}* — project: ${project}\n` +
       `Done: ${f['Done Yesterday'] || '—'}\n` +
       `Today: ${f['In Progress Today'] || '—'}\n` +

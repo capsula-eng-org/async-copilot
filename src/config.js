@@ -8,6 +8,7 @@ const schema = z.object({
   AIRTABLE_API_KEY: z.string().min(1),
   AIRTABLE_BASE_ID: z.string().min(1),
   AIRTABLE_TABLE: z.string().default('Daily_Drafts'),
+  AIRTABLE_ASYNCS_TABLE: z.string().default('Daily Asyncs'),
   AIRTABLE_PROJECTS_TABLE: z.string().default('Projects'),
   AIRTABLE_PROJECTS_NAME_FIELD: z.string().default('Name'),
   AIRTABLE_DRAFTS_URL: z.string().url().optional(),

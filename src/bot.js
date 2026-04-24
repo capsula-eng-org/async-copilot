@@ -27,9 +27,14 @@ bot.on('voice', async ctx => {
     const draft = await extractUpdate(transcript);
     const result = await insertDraft({ ...draft, raw: transcript });
 
-    const projectLine = result.projectMatched
-      ? `• Project: ${draft.project}`
-      : `• Project: ⚠️ "${result.projectAttempted}" not found in Projects table — link manually in Airtable`;
+    let projectLine;
+    if (result.projectMatched) {
+      projectLine = `• Project: ${draft.project}`;
+    } else if (result.projectAttempted) {
+      projectLine = `• Project: ⚠️ "${result.projectAttempted}" not found in Project Approvals — link manually in Airtable`;
+    } else {
+      projectLine = `• Project: (none)`;
+    }
 
     await ctx.replyWithMarkdown(
       `✅ *staged*\n` +
