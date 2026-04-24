@@ -1,39 +1,53 @@
 import OpenAI from 'openai';
+import { z } from 'zod';
 import { config, COMPANIES } from './config.js';
 
-const openai = new OpenAI({ apiKey: config.OPENAI_API_KEY });
+const groq = new OpenAI({
+  apiKey: config.GROQ_API_KEY,
+  baseURL: 'https://api.groq.com/openai/v1',
+});
 
-const SCHEMA = {
-  type: 'object',
-  properties: {
-    company: { type: 'string', enum: COMPANIES },
-    project: { type: 'string', description: 'Project name; must match a record in the Projects table (e.g. "Inbound Chat Automation", "SEO Blog", "Data Management")' },
-    done: { type: 'string', description: 'Completed tasks' },
-    inProgress: { type: 'string', description: 'Current tasks in progress today' },
-    blocked: { type: 'string', description: 'Blockers or dependencies; "N/A" if none' },
-  },
-  required: ['company', 'project', 'done', 'inProgress', 'blocked'],
-  additionalProperties: false,
-};
+const Schema = z.object({
+  company: z.enum(COMPANIES),
+  project: z.string(),
+  done: z.string(),
+  inProgress: z.string(),
+  blocked: z.string(),
+});
 
 const SYSTEM = `You extract a daily standup entry from a voice-note transcript.
+Respond with ONLY a JSON object (no prose, no markdown), matching this exact shape:
+{
+  "company": "TradeSpace" | "Enginectra",
+  "project": "<project name as the user spoke it>",
+  "done": "<completed tasks, or empty string>",
+  "inProgress": "<tasks today, or empty string>",
+  "blocked": "<blockers, or 'N/A'>"
+}
 Rules:
-- Company MUST be one of: ${COMPANIES.join(', ')}. Pick the most likely one from context; if ambiguous, default to TradeSpace.
-- Project: echo the project name exactly as the user says it. Do not invent or translate.
-- If a field is not mentioned, use an empty string (for blocked, use "N/A").
-- Do not invent facts. Strip filler words ("um", "like").`;
+- "company" MUST be exactly "TradeSpace" or "Enginectra". If ambiguous, default to "TradeSpace".
+- "project": echo the project name as spoken; do NOT translate or invent.
+- Strip filler words ("um", "like", "you know"). Do not invent facts.
+- Empty strings are allowed for missing fields. "blocked" defaults to "N/A".`;
 
 export async function extractUpdate(transcript) {
-  const res = await openai.chat.completions.create({
-    model: 'gpt-4o',
+  const res = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: SYSTEM },
       { role: 'user', content: transcript },
     ],
-    response_format: {
-      type: 'json_schema',
-      json_schema: { name: 'standup_entry', schema: SCHEMA, strict: true },
-    },
   });
-  return JSON.parse(res.choices[0].message.content);
+  let raw;
+  try {
+    raw = JSON.parse(res.choices[0].message.content);
+  } catch {
+    throw new Error(`LLM returned non-JSON: ${res.choices[0].message.content?.slice(0, 200)}`);
+  }
+  const result = Schema.safeParse(raw);
+  if (!result.success) {
+    throw new Error(`LLM JSON failed schema: ${JSON.stringify(result.error.flatten().fieldErrors)}`);
+  }
+  return result.data;
 }

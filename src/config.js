@@ -4,7 +4,7 @@ import { z } from 'zod';
 const schema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(1),
   TELEGRAM_ALLOWED_USER_ID: z.coerce.number().int(),
-  OPENAI_API_KEY: z.string().min(1),
+  GROQ_API_KEY: z.string().min(1),
   AIRTABLE_API_KEY: z.string().min(1),
   AIRTABLE_BASE_ID: z.string().min(1),
   AIRTABLE_TABLE: z.string().default('Daily_Drafts'),
