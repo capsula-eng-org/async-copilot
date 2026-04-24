@@ -22,17 +22,28 @@ bot.command('skip', ctx => {
   ctx.reply('⏭ today\'s 10:00 AM post is cancelled. Drafts remain pending for tomorrow.');
 });
 
+function formatSubmitResult(result) {
+  if (result.submitted > 0 && !result.failed) {
+    return `✅ posted ${result.submitted} entr${result.submitted === 1 ? 'y' : 'ies'} to Make`;
+  }
+  if (result.submitted > 0 && result.failed) {
+    const lines = result.failures.map(f => `• ${f.error}`).join('\n');
+    return `⚠️ posted ${result.submitted}, ${result.failed} failed:\n${lines}`;
+  }
+  if (result.failed) {
+    const lines = result.failures.map(f => `• ${f.error}`).join('\n');
+    return `❌ all ${result.failed} failed:\n${lines}`;
+  }
+  return `ℹ️ ${result.note || 'nothing to post'}`;
+}
+
 bot.action('review:approve', async ctx => {
   try {
     await ctx.answerCbQuery('Posting now…');
     const result = await submitDaily();
     skipToday = true;
     await ctx.editMessageReplyMarkup(undefined).catch(() => {});
-    await ctx.reply(
-      result.submitted > 0
-        ? `✅ posted ${result.submitted} entr${result.submitted === 1 ? 'y' : 'ies'} to Make`
-        : `ℹ️ ${result.note || 'nothing to post'}`
-    );
+    await ctx.reply(formatSubmitResult(result));
   } catch (err) {
     console.error('approve error:', err);
     await ctx.reply(`❌ submit failed: ${err.message}`);

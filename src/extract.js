@@ -16,24 +16,35 @@ const Schema = z.object({
 });
 
 const SYSTEM = `You extract a daily standup entry from a voice-note transcript.
-Respond with ONLY a JSON object (no prose, no markdown wrapping), matching this exact shape:
+
+CRITICAL TRANSLATION RULE (do this BEFORE extracting fields):
+If the transcript is not in English, TRANSLATE it to English first. The final JSON output MUST always be in English — every field value, every word — regardless of the input language. The only exception is proper nouns (project names), which stay as the user said them.
+
+Output ONLY a JSON object (no prose, no markdown) matching this shape:
 {
   "company": "TradeSpace" | "Enginectra",
-  "project": "<project name as the user spoke it, or empty string>",
-  "done": "<completed tasks>",
-  "inProgress": "<tasks today>",
-  "blocked": "<blockers, or 'N/A'>"
+  "project": "<project name as a proper noun, or empty string>",
+  "done": "<completed tasks, IN ENGLISH>",
+  "inProgress": "<today's tasks, IN ENGLISH>",
+  "blocked": "<blockers in English, or 'N/A'>"
 }
 
-Rules:
-- ALWAYS output field values in English, regardless of input language (the user may speak Spanish). Translate faithfully; do not paraphrase heavily.
-- "company" MUST be exactly "TradeSpace" or "Enginectra". If ambiguous, default to "TradeSpace".
-- "project": echo the project name as the user spoke it (keep the original project name even if it's in Spanish — only translate verbs/descriptions, not proper nouns). If no project mentioned, use an empty string.
-- For "done", "inProgress", "blocked": if the user mentions MULTIPLE items/tasks, format as a bulleted list with each item on its own line, each prefixed with "- " (hyphen + space). If only ONE item, just write it plainly without a bullet. Never bullet "N/A".
-  Example of a multi-item field: "- Finished the API integration\\n- Ran unit tests\\n- Updated documentation"
-  Example of a single-item field: "Finished the API integration"
-- Strip filler words ("um", "like", "you know", "eh", "pues"). Do not invent facts.
-- Empty strings are allowed for missing fields. "blocked" defaults to "N/A".`;
+Field rules:
+- "company": exactly "TradeSpace" or "Enginectra". If ambiguous, default to "TradeSpace".
+- "project": the project name as spoken (proper noun, keep original). Empty string if no project mentioned.
+- "done" / "inProgress" / "blocked": ALWAYS in English. If the user lists MULTIPLE items, format as a bulleted list with each item on its own line prefixed by "- " (hyphen + space). If ONE item, no bullet. Never bullet "N/A".
+- Strip filler words in any language ("um", "like", "you know", "pues", "este", "o sea", "eh").
+- Do not invent facts.
+
+Example (Spanish input):
+Transcript: "Hoy en TradeSpace trabajé en Marketing Q2. Terminé los copies del landing y revisé el brief del cliente. Mañana arranco con el diseño visual y una reunión con el equipo. No hay bloqueos por ahora."
+Output:
+{"company":"TradeSpace","project":"Marketing Q2","done":"- Finished the landing page copy\\n- Reviewed the client brief","inProgress":"- Start the visual design\\n- Team meeting","blocked":"N/A"}
+
+Example (English, single-item fields):
+Transcript: "Enginectra update. Finished the API integration. Today I'm working on deployment. Blocked by missing credentials from ops."
+Output:
+{"company":"Enginectra","project":"","done":"Finished the API integration","inProgress":"Working on deployment","blocked":"Missing credentials from ops"}`;
 
 export async function extractUpdate(transcript) {
   const res = await groq.chat.completions.create({
